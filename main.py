@@ -122,15 +122,15 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
            [ InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
            ]
        reply_markup = InlineKeyboardMarkup(reply_keyboard)
-       await query.edit_message_text(text=f"Сьогоднішній графік:\n{schedule}")
+       await query.message.reply_text(text=f"Сьогоднішній графік:\n{schedule}")
        await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
     
     elif query.data == "2":
         # Implement fetching and displaying tomorrow's schedule
-        await query.edit_message_text(text="Завтрашній графік")
+        await query.message.reply_text(text="Завтрашній графік")
     
     elif query.data == "book_today":
-        await query.edit_message_text(text=f"Заброньовано")
+        await query.message.reply_text(text=f"Заброньовано")
     
     # elif query.data == "book_tomorrow":
     #     await query.edit_message_text(text=f"Заброньовано")
