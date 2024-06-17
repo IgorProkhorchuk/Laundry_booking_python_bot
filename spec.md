@@ -18,7 +18,8 @@
     - if timeslot is already booked by someone -- should be displayed time and Name of person who booked this timeslot in the right of time (ex. __"09:00 - *Ivan*"__)
     - if timeslot is free -- should be displayed time and a word "free" (ex. __"09:00 - *free*"__)
     - button `/book_for_today` should be displayed
-    - button `/book_for_other_day` should be displayed
+    - button `/display_tomorrow_schedule` should be displayed
+    - button `/display_week_schedule` should be displayed
     - button `/start` should be displayed
 
 ##### Display tomorrow schedule

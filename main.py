@@ -27,7 +27,6 @@ def create_booking_table():
     conn = sqlite3.connect('bookings.db')
     cursor = conn.cursor()
 
-    # Fix the indentation for the CREATE TABLE statement
     cursor.execute("""CREATE TABLE IF NOT EXISTS booking (
                       id INTEGER PRIMARY KEY AUTOINCREMENT,
                       day TEXT,
@@ -39,7 +38,7 @@ def create_booking_table():
 
 create_booking_table()
 
-# Define a function to get the dates of the current week
+""" Define a function to get the dates of the current week """
 def get_week_dates_and_weekdays():
     today = datetime.now()
     start_of_week = today - timedelta(days=today.weekday())  # Get the latest Monday
@@ -55,7 +54,7 @@ def get_todays_weekday():
 weekdays = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"]
 timeslots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
 
-# create into the database draft schedule for next week
+""" create into the database draft schedule for next week, should be changed to create it automatically on a weekly basis """
 def create_schedule():
     conn = sqlite3.connect('bookings.db')
     conn.execute("BEGIN TRANSACTION")
@@ -71,6 +70,8 @@ def create_schedule():
 
 # create_schedule()
 
+""" Get today's schedule """
+
 def get_today_schedule():
     conn = sqlite3.connect('bookings.db')
     cursor = conn.cursor()
@@ -84,6 +85,12 @@ def get_today_schedule():
     schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
 
+""" Get tomorrow's schedule """
+def get_romorrow_schedule():
+    pass
+
+""" Get the schedule for the week """
+
 def get_week_schedule():
     conn = sqlite3.connect('bookings.db')
     cursor = conn.cursor()
@@ -94,6 +101,8 @@ def get_week_schedule():
 
     schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
+
+""" Start the bot """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reply_keyboard = [
