@@ -4,7 +4,7 @@ def init_db():
     conn = sqlite3.connect('bookings.db')
     c = conn.cursor()
     c.execute('''
-        CREATE TABLE IF NOT EXISTS bookings (
+        CREATE TABLE IF NOT EXISTS booking (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             day TEXT,
             slot TEXT,

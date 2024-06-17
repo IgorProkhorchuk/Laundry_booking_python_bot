@@ -6,7 +6,11 @@
     - `/display_today_schedule`
     - `/display_tomorrow_schedule`
     - `/display_this_week_schedule`
+> _done_
 
+
+##### Create Database to store the booking results
+> _done_
 
 ##### Display today schedule
 
@@ -49,3 +53,5 @@
 - When person input his/her name - record to database should be done;
 - After record to database is done:
     - should be displayed the schedule for selected day;
+
+#### Reset database and prepare for next week
