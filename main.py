@@ -69,7 +69,7 @@ def create_schedule():
     conn.commit()
     conn.close()
 
-create_schedule()
+# create_schedule()
 
 def get_today_schedule():
     conn = sqlite3.connect('bookings.db')
@@ -81,7 +81,7 @@ def get_today_schedule():
     cursor.close()
     conn.close()
 
-    schedule = "\n".join([f"{row[2]}: {row[3]}" for row in rows])
+    schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
 
 def get_week_schedule():
@@ -115,12 +115,26 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.answer()
 
     if query.data == "1":
-        await query.edit_message_text(text=f"Сьогоднішній графік:\n{get_today_schedule()}")
+       schedule = get_today_schedule()
+       reply_keyboard = [
+           [ InlineKeyboardButton("Бронювати слот на сьогодні", callback_data="book_today")],
+           [ InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
+           [ InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
+           ]
+       reply_markup = InlineKeyboardMarkup(reply_keyboard)
+       await query.edit_message_text(text=f"Сьогоднішній графік:\n{schedule}")
+       await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
     
     elif query.data == "2":
         # Implement fetching and displaying tomorrow's schedule
         await query.edit_message_text(text="Завтрашній графік")
     
+    elif query.data == "book_today":
+        await query.edit_message_text(text=f"Заброньовано")
+    
+    # elif query.data == "book_tomorrow":
+    #     await query.edit_message_text(text=f"Заброньовано")
+
     else:
         await query.edit_message_text(text=f"Графік на тиждень:\n{get_week_schedule()}")
 
