@@ -115,7 +115,7 @@ def book_for_today():
 
 def get_name():
     while True:
-        user_input = input("Введіть ім'я: ").strip()
+        user_input = input().strip()
         if user_input and any(char.isalpha() for char in user_input):
             break
         else:
@@ -162,7 +162,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.message.reply_text(text="Завтрашній графік")
     
     elif query.data == "book_today":
-        await query.message.reply_text(get_name)
+        await query.message.reply_text(text=f"Введіть ім'я: {get_name}")
         await query.message.reply_text(text=f"Заброньовано")
     
     # elif query.data == "book_tomorrow":
