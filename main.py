@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-from telegram.ext import Application, ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from environs import Env
 import queue, sqlite3, logging
 import asyncio
@@ -102,36 +102,27 @@ def get_week_schedule():
     schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
 
-def book_for_today():
+
+def get_available_slots():
     conn = sqlite3.connect('bookings.db')
-    conn.execute("BEGIN TRANSACTION")
     cursor = conn.cursor()
     cursor.execute(
-        """UPDATE booking SET name = ? WHERE day = ? AND slot = ?""",
-        ("booked", get_todays_weekday(), "08:00")
+        """SELECT slot FROM booking WHERE day = ? AND name = 'free'""", (get_todays_weekday(),)
     )
-    conn.commit()
+    rows = cursor.fetchall()
+    cursor.close()
     conn.close()
 
-def get_name():
-    while True:
-        user_input = input().strip()
-        if user_input and any(char.isalpha() for char in user_input):
-            break
-        else:
-            print("Ім'я не повинно містити цифри")
-
-    capitalized_name = user_input[0].upper() + user_input[1:].lower()
-
-    return capitalized_name
+    available_slots = [row[0] for row in rows]
+    return available_slots
 
 """ Start the bot """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reply_keyboard = [
-        [ InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
-        [ InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
-        [ InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
+        [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
+        [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
+        [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
     ]
 
     reply_markup = InlineKeyboardMarkup(reply_keyboard)
@@ -149,9 +140,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if query.data == "1":
        schedule = get_today_schedule()
        reply_keyboard = [
-           [ InlineKeyboardButton("Бронювати слот на сьогодні", callback_data="book_today")],
-           [ InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
-           [ InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
+           [InlineKeyboardButton("Бронювати слот на сьогодні", callback_data="book_today")],
+           [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
+           [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
            ]
        reply_markup = InlineKeyboardMarkup(reply_keyboard)
        await query.message.reply_text(text=f"Сьогоднішній графік:\n{schedule}")
@@ -162,14 +153,46 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.message.reply_text(text="Завтрашній графік")
     
     elif query.data == "book_today":
-        await query.message.reply_text(text=f"Введіть ім'я: {get_name}")
-        await query.message.reply_text(text=f"Заброньовано")
-    
-    # elif query.data == "book_tomorrow":
-    #     await query.edit_message_text(text=f"Заброньовано")
+        available_slots = get_available_slots()
+        if available_slots:
+            reply_keyboard = [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots]
+            reply_markup = InlineKeyboardMarkup(reply_keyboard)
+            await query.message.reply_text(text="Виберіть доступний слот:", reply_markup=reply_markup)
+        else:
+            await query.message.reply_text(text="Немає доступних слотів на сьогодні.")
 
+    elif query.data.startswith("slot_"):
+        selected_slot = query.data.split("_")[1]
+        context.user_data['selected_slot'] = selected_slot
+        await query.message.reply_text(text="Введіть ім'я:")
+    
     else:
         await query.edit_message_text(text=f"Графік на тиждень:\n{get_week_schedule()}")
+
+
+async def handle_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    name = update.message.text.strip()
+    if any(char.isdigit() for char in name):
+        await update.message.reply_text("Ім'я не повинно містити цифри. Спробуйте ще раз.")
+        return
+
+    capitalized_name = name[0].upper() + name[1:].lower()
+    selected_slot = context.user_data.get('selected_slot')
+    if selected_slot:
+        book_slot(get_todays_weekday(), selected_slot, capitalized_name)
+        await update.message.reply_text(f"Заброньовано слот {selected_slot} для {capitalized_name}")
+        context.user_data['selected_slot'] = None
+
+def book_slot(day, slot, name):
+    conn = sqlite3.connect('bookings.db')
+    conn.execute("BEGIN TRANSACTION")
+    cursor = conn.cursor()
+    cursor.execute(
+        """UPDATE booking SET name = ? WHERE day = ? AND slot = ?""",
+        (name, day, slot)
+    )
+    conn.commit()
+    conn.close()
 
 def main() -> None:
     """Run the bot."""
@@ -178,6 +201,7 @@ def main() -> None:
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_name))
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
