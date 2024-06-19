@@ -102,6 +102,29 @@ def get_week_schedule():
     schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
 
+def book_for_today():
+    conn = sqlite3.connect('bookings.db')
+    conn.execute("BEGIN TRANSACTION")
+    cursor = conn.cursor()
+    cursor.execute(
+        """UPDATE booking SET name = ? WHERE day = ? AND slot = ?""",
+        ("booked", get_todays_weekday(), "08:00")
+    )
+    conn.commit()
+    conn.close()
+
+def get_name():
+    while True:
+        user_input = input("Введіть ім'я: ").strip()
+        if user_input and any(char.isalpha() for char in user_input):
+            break
+        else:
+            print("Ім'я не повинно містити цифри")
+
+    capitalized_name = user_input[0].upper() + user_input[1:].lower()
+
+    return capitalized_name
+
 """ Start the bot """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -139,6 +162,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.message.reply_text(text="Завтрашній графік")
     
     elif query.data == "book_today":
+        await query.message.reply_text(get_name)
         await query.message.reply_text(text=f"Заброньовано")
     
     # elif query.data == "book_tomorrow":
