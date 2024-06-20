@@ -51,6 +51,14 @@ def get_todays_weekday():
     weekday = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
     return weekday[today.weekday()]  # Access by weekday number (0-6)
 
+
+def get_tomorrows_weekday():
+    """Gets the weekday name for tomorrow's date."""
+    today = datetime.now()
+    tomorrow = today + timedelta(days=1)
+    weekday = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
+    return weekday[tomorrow.weekday()]  # Access by weekday number (0-6)
+
 weekdays = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"]
 timeslots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
 
@@ -87,7 +95,17 @@ def get_today_schedule():
 
 """ Get tomorrow's schedule """
 def get_romorrow_schedule():
-    pass
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT * FROM booking WHERE day = ?""", (get_tomorrows_weekday(),)
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
+    return schedule
 
 """ Get the schedule for the week """
 
