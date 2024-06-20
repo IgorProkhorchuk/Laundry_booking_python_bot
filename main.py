@@ -157,25 +157,27 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if query.data == "1":
        schedule = get_today_schedule()
+       weekday = get_todays_weekday()
        reply_keyboard = [
            [InlineKeyboardButton("Бронювати слот на сьогодні", callback_data="book_today")],
            [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
            [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
            ]
        reply_markup = InlineKeyboardMarkup(reply_keyboard)
-       await query.message.reply_text(text=f"Сьогоднішній графік:\n{schedule}")
+       await query.message.reply_text(text=f"Сьогоднішній графік: {weekday} \n{schedule}")
        await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
     
     elif query.data == "2":
         # Implement fetching and displaying tomorrow's schedule
         schedule = get_romorrow_schedule()
+        weekday = get_tomorrows_weekday()
         reply_keyboard = [
             [InlineKeyboardButton("Бронювати слот на завтра", callback_data="book_tomorrow")],
             [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
             [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
         ]
         reply_markup = InlineKeyboardMarkup(reply_keyboard)
-        await query.message.reply_text(text=f"Завтрашній графік:\n{schedule}")
+        await query.message.reply_text(text=f"Завтрашній графік: {weekday} \n{schedule}")
         await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
     
     elif query.data == "book_today":
