@@ -1,5 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-from telegram.ext import Application, ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, \
+    MessageHandler, filters
 from environs import Env
 import queue, sqlite3, logging
 import asyncio
@@ -21,6 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 # initialize database
 def create_booking_table():
     """Creates the booking table if it doesn't exist."""
@@ -36,14 +38,18 @@ def create_booking_table():
     conn.commit()
     conn.close()
 
+
 create_booking_table()
 
 """ Define a function to get the dates of the current week """
+
+
 def get_week_dates_and_weekdays():
     today = datetime.now()
     start_of_week = today - timedelta(days=today.weekday())  # Get the latest Monday
     weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
     return [(start_of_week + timedelta(days=i), weekdays[i]) for i in range(5)]
+
 
 def get_todays_weekday():
     """Gets the weekday name for today's date."""
@@ -59,10 +65,13 @@ def get_tomorrows_weekday():
     weekday = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
     return weekday[tomorrow.weekday()]  # Access by weekday number (0-6)
 
+
 weekdays = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"]
 timeslots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
 
 """ create into the database draft schedule for next week, should be changed to create it automatically on a weekly basis """
+
+
 def create_schedule():
     conn = sqlite3.connect('bookings.db')
     conn.execute("BEGIN TRANSACTION")
@@ -76,9 +85,11 @@ def create_schedule():
     conn.commit()
     conn.close()
 
+
 # create_schedule()
 
 """ Get today's schedule """
+
 
 def get_today_schedule():
     conn = sqlite3.connect('bookings.db')
@@ -93,7 +104,10 @@ def get_today_schedule():
     schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
 
+
 """ Get tomorrow's schedule """
+
+
 def get_romorrow_schedule():
     conn = sqlite3.connect('bookings.db')
     cursor = conn.cursor()
@@ -107,7 +121,9 @@ def get_romorrow_schedule():
     schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
 
+
 """ Get the schedule for the week """
+
 
 def get_week_schedule():
     conn = sqlite3.connect('bookings.db')
@@ -121,7 +137,7 @@ def get_week_schedule():
     return schedule
 
 
-def get_available_slots():
+def get_available_slots_today():
     conn = sqlite3.connect('bookings.db')
     cursor = conn.cursor()
     cursor.execute(
@@ -134,7 +150,23 @@ def get_available_slots():
     available_slots = [row[0] for row in rows]
     return available_slots
 
+
+def get_available_slots_tomorrow():
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT slot FROM booking WHERE day = ? AND name = 'free'""", (get_tomorrows_weekday(),)
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    available_slots = [row[0] for row in rows]
+    return available_slots
+
+
 """ Start the bot """
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reply_keyboard = [
@@ -147,6 +179,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("виберіть опцію:", reply_markup=reply_markup)
 
+
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
@@ -156,17 +189,17 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await query.answer()
 
     if query.data == "1":
-       schedule = get_today_schedule()
-       weekday = get_todays_weekday()
-       reply_keyboard = [
-           [InlineKeyboardButton("Бронювати слот на сьогодні", callback_data="book_today")],
-           [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
-           [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
-           ]
-       reply_markup = InlineKeyboardMarkup(reply_keyboard)
-       await query.message.reply_text(text=f"Сьогоднішній графік: {weekday} \n{schedule}")
-       await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
-    
+        schedule = get_today_schedule()
+        weekday = get_todays_weekday()
+        reply_keyboard = [
+            [InlineKeyboardButton("Бронювати слот на сьогодні", callback_data="book_today")],
+            [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
+            [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
+        ]
+        reply_markup = InlineKeyboardMarkup(reply_keyboard)
+        await query.message.reply_text(text=f"Сьогоднішній графік:\n{weekday}\n{schedule}")
+        await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
+
     elif query.data == "2":
         # Implement fetching and displaying tomorrow's schedule
         schedule = get_romorrow_schedule()
@@ -177,11 +210,22 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
         ]
         reply_markup = InlineKeyboardMarkup(reply_keyboard)
-        await query.message.reply_text(text=f"Завтрашній графік: {weekday} \n{schedule}")
+        await query.message.reply_text(text=f"Завтрашній графік:\n{weekday}\n{schedule}")
         await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
-    
+
+    elif query.data == "3":
+        # Implement fetching and displaying the week's schedule
+        schedule = get_week_schedule()
+        reply_keyboard = [
+            [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
+            [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
+        ]
+        reply_markup = InlineKeyboardMarkup(reply_keyboard)
+        await query.message.reply_text(text=f"Графік на тиждень:\n{schedule}")
+        await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
+
     elif query.data == "book_today":
-        available_slots = get_available_slots()
+        available_slots = get_available_slots_today()
         if available_slots:
             reply_keyboard = [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots]
             reply_markup = InlineKeyboardMarkup(reply_keyboard)
@@ -189,11 +233,20 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             await query.message.reply_text(text="Немає доступних слотів на сьогодні.")
 
+    elif query.data == "book_tomorrow":
+        available_slots = get_available_slots_tomorrow()
+        if available_slots:
+            reply_keyboard = [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots]
+            reply_markup = InlineKeyboardMarkup(reply_keyboard)
+            await query.message.reply_text(text="Виберіть доступний слот:", reply_markup=reply_markup)
+        else:
+            await query.message.reply_text(text="Немає доступних слотів на завтра.")
+
     elif query.data.startswith("slot_"):
         selected_slot = query.data.split("_")[1]
         context.user_data['selected_slot'] = selected_slot
         await query.message.reply_text(text="Введіть ім'я:")
-    
+
     else:
         await query.edit_message_text(text=f"Графік на тиждень:\n{get_week_schedule()}")
 
@@ -211,6 +264,7 @@ async def handle_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text(f"Заброньовано слот {selected_slot} для {capitalized_name}")
         context.user_data['selected_slot'] = None
 
+
 def book_slot(day, slot, name):
     conn = sqlite3.connect('bookings.db')
     conn.execute("BEGIN TRANSACTION")
@@ -221,6 +275,7 @@ def book_slot(day, slot, name):
     )
     conn.commit()
     conn.close()
+
 
 def main() -> None:
     """Run the bot."""
@@ -233,6 +288,7 @@ def main() -> None:
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+
 
 if __name__ == "__main__":
     main()
