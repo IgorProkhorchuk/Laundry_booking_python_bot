@@ -54,8 +54,6 @@ def get_week_dates_and_weekdays():
     return [(start_of_week + timedelta(days=i), weekdays[i]) for i in range(5)]
 
 
-
-
 def get_todays_weekday():
     """Gets the weekday name for today's date."""
     today = datetime.now()
@@ -137,7 +135,18 @@ def get_week_schedule():
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
+    schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
+    return schedule
 
+def get_day_schedule(selected_day):
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT * FROM booking WHERE day = ?""", (selected_day,)
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
     schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
     return schedule
 
@@ -169,6 +178,20 @@ def get_available_slots_tomorrow():
     available_slots = [row[0] for row in rows]
     return available_slots
 
+
+
+def get_available_slots_selected_day(selected_day):
+    conn = sqlite3.connect('bookings.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        """SELECT slot FROM booking WHERE day = ? AND name = 'free'""", (selected_day,)
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    available_slots = [row[0] for row in rows]
+    return available_slots
 
 """ Start the bot """
 
@@ -222,8 +245,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         # Implement fetching and displaying the week's schedule
         schedule = get_week_schedule()
         reply_keyboard = [
-            [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
-            [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
+            [InlineKeyboardButton("Виберіть день: ", callback_data="select_day")],
+            [InlineKeyboardButton("Назад", callback_data="start")],
         ]
         reply_markup = InlineKeyboardMarkup(reply_keyboard)
         await query.message.reply_text(text=f"Графік на тиждень:\n{schedule}")
@@ -249,13 +272,42 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             await query.message.reply_text(text="Немає доступних слотів на завтра.")
 
+    elif query.data == "select_day":
+        reply_keyboard = [[InlineKeyboardButton(day, callback_data=f"day_{day}")] for day in weekdays]
+        reply_markup = InlineKeyboardMarkup(reply_keyboard)
+        await query.message.reply_text(text="Виберіть день:", reply_markup=reply_markup)
+
+    elif query.data.startswith("day_"):
+        selected_day = query.data.split("_")[1]
+        available_slots = get_available_slots_selected_day(selected_day)
+        if available_slots:
+            context.user_data['booking_day'] = selected_day
+            reply_keyboard = [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots]
+            reply_markup = InlineKeyboardMarkup(reply_keyboard)
+            schedule = get_day_schedule(selected_day)
+            await query.message.reply_text(text=f"Графік на {selected_day}:\n{schedule}")
+            await query.message.reply_text(text="Виберіть доступний слот:", reply_markup=reply_markup)
+        else:
+            await query.message.reply_text(text=f"Немає доступних слотів на {selected_day}.")
+
+
     elif query.data.startswith("slot_"):
         selected_slot = query.data.split("_")[1]
         context.user_data['selected_slot'] = selected_slot
         await query.message.reply_text(text="Введіть ім'я:")
 
-    else:
-        await query.edit_message_text(text=f"Графік на тиждень:\n{get_week_schedule()}")
+    
+    elif query.data == "start":
+        reply_keyboard = [
+            [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
+            [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
+            [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
+        ]
+        reply_markup = InlineKeyboardMarkup(reply_keyboard)
+        await query.message.reply_text("виберіть опцію:", reply_markup=reply_markup)
+
+    # else:
+    #     await query.edit_message_text(text=f"Графік на тиждень:\n{get_week_schedule()}")
 
 
 async def handle_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

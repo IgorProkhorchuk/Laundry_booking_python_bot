@@ -10,31 +10,45 @@
 
 
 ##### Create Database to store the booking results
+
+1. Database should contain:
+    - ID (autoincrement);
+    - date;
+    - weekday;
+    - slot;
+    - name ("free" if empty);
 > _done_
+2. Each friday database chould be cleared and filled with next week dates.
 
 ##### Display today schedule
 
 - should be displayed an ordered list with timeslots for starts with "1" with actual schedule for **today**
     - if timeslot is already booked by someone -- should be displayed time and Name of person who booked this timeslot in the right of time (ex. __"09:00 - *Ivan*"__)
     - if timeslot is free -- should be displayed time and a word "free" (ex. __"09:00 - *free*"__)
-    - button `/book_for_today` should be displayed
-    - button `/display_tomorrow_schedule` should be displayed
-    - button `/display_week_schedule` should be displayed
-    - button `/start` should be displayed
+- button `/book_for_today` should be displayed
+- button `/display_tomorrow_schedule` should be displayed
+- button `/display_week_schedule` should be displayed
+- button `/start` should be displayed
+> _done_  
 
 ##### Display tomorrow schedule
 
 - should be displayed an ordered list with timeslots for starts with "1" with actual schedule for **tomorrow**
     - if timeslot is already booked by someone -- should be displayed time and Name of person who booked this timeslot in the right of time (ex. __"09:00 - *Ivan*"__)
     - if timeslot is free -- should be displayed time and a word "free" (ex. __"09:00 - *free*"__)
-    - button `/book_for_tomorrow` should be displayed
-    - button `/book_for_other_day` should be displayed
-    - button `/start` should be displayed
+- button `/book_for_tomorrow` should be displayed
+- button `/display_today_schedule` should be displayed
+- button `/display_week_schedule` should be displayed
+- button `/start` should be displayed
+> _done_
 
 ##### Display week schedule
 
 - should be displayed week days (from Monday to Friday) with ordered list with actual timeslots under each weekday respectively.
     - if timeslot is already booked by someone -- timeslot should be displayed in dark red color; if timeslot is free -- timeslot should be displayed in green color;
+- set of buttons `/book_for_{monday - friday}` should be displayed
+- button `/start` should be displayed
+
 
 
 #### Book option
