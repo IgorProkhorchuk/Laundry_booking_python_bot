@@ -268,20 +268,14 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         available_slots = get_available_slots_tomorrow()
         if available_slots:
             context.user_data['booking_day'] = get_tomorrows_weekday()
-            reply_keyboard = [
-                [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots],
-                [InlineKeyboardButton("Назад", callback_data="start")],
-            ]
+            reply_keyboard = [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots]
             reply_markup = InlineKeyboardMarkup(reply_keyboard)
             await query.message.reply_text(text="Виберіть доступний слот:", reply_markup=reply_markup)
         else:
             await query.message.reply_text(text="Немає доступних слотів на завтра.")
 
     elif query.data == "select_day":
-        reply_keyboard = [
-            [[InlineKeyboardButton(day, callback_data=f"day_{day}")] for day in weekdays],
-            [InlineKeyboardButton("Назад", callback_data="start")],
-        ]
+        reply_keyboard = [[InlineKeyboardButton(day, callback_data=f"day_{day}")] for day in weekdays]
         reply_markup = InlineKeyboardMarkup(reply_keyboard)
         await query.message.reply_text(text="Виберіть день:", reply_markup=reply_markup)
 
