@@ -46,9 +46,14 @@ create_booking_table()
 
 def get_week_dates_and_weekdays():
     today = datetime.now()
-    start_of_week = today - timedelta(days=today.weekday())  # Get the latest Monday
+    # Get the start of the current week (Monday)
+    start_of_week = today - timedelta(days=today.weekday())
+    if today.weekday() >= 5:
+        start_of_week += timedelta(days=7)  # If today is Saturday or Sunday, get next Monday
     weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
     return [(start_of_week + timedelta(days=i), weekdays[i]) for i in range(5)]
+
+
 
 
 def get_todays_weekday():
@@ -227,6 +232,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif query.data == "book_today":
         available_slots = get_available_slots_today()
         if available_slots:
+            context.user_data['booking_day'] = get_todays_weekday()
             reply_keyboard = [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots]
             reply_markup = InlineKeyboardMarkup(reply_keyboard)
             await query.message.reply_text(text="Виберіть доступний слот:", reply_markup=reply_markup)
@@ -236,6 +242,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif query.data == "book_tomorrow":
         available_slots = get_available_slots_tomorrow()
         if available_slots:
+            context.user_data['booking_day'] = get_tomorrows_weekday()
             reply_keyboard = [[InlineKeyboardButton(slot, callback_data=f"slot_{slot}")] for slot in available_slots]
             reply_markup = InlineKeyboardMarkup(reply_keyboard)
             await query.message.reply_text(text="Виберіть доступний слот:", reply_markup=reply_markup)
@@ -259,10 +266,13 @@ async def handle_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     capitalized_name = name[0].upper() + name[1:].lower()
     selected_slot = context.user_data.get('selected_slot')
-    if selected_slot:
-        book_slot(get_todays_weekday(), selected_slot, capitalized_name)
+    booking_day = context.user_data.get('booking_day')
+    
+    if selected_slot and booking_day:
+        book_slot(booking_day, selected_slot, capitalized_name)
         await update.message.reply_text(f"Заброньовано слот {selected_slot} для {capitalized_name}")
         context.user_data['selected_slot'] = None
+        context.user_data['booking_day'] = None
 
 
 def book_slot(day, slot, name):
