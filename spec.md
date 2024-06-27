@@ -48,7 +48,7 @@
     - if timeslot is already booked by someone -- timeslot should be displayed in dark red color; if timeslot is free -- timeslot should be displayed in green color;
 - set of buttons `/book_for_{monday - friday}` should be displayed
 - button `/start` should be displayed
-
+> _done_
 
 
 #### Book option
