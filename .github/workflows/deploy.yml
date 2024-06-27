@@ -18,13 +18,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to DigitalOcean
+      - name: Deploy to Cityhost
         env:
           DO_HOST: ${{ secrets.DO_HOST }}
           DO_USER: ${{ secrets.DO_USER }}
         run: |
           ssh -o StrictHostKeyChecking=no $DO_USER@$DO_HOST << 'EOF'
-            cd /home/telegram_bot
+            cd /opt/telegram_bot
             git pull origin main
             pipenv install --deploy --ignore-pipfile
             systemctl restart telegram_bot.service
