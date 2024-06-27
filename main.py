@@ -89,7 +89,7 @@ def create_schedule():
     conn.close()
 
 
-create_schedule()
+# create_schedule()
 
 """ Get today's schedule """
 
