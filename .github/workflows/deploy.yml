@@ -24,8 +24,13 @@ jobs:
           DO_USER: ${{ secrets.DO_USER }}
         run: |
           ssh -o StrictHostKeyChecking=no $DO_USER@$DO_HOST << 'EOF'
-            cd /opt/telegram_bot
-            git pull origin main
-            pipenv install --deploy --ignore-pipfile
-            sudo systemctl restart telegram_bot.service
+            # Commands are removed here
+
+            # Connect via SSH with a proper login shell
+            ssh -o StrictHostKeyChecking=no $DO_USER@$DO_HOST << 'EOF2'
+              cd /opt/telegram_bot
+              git pull origin main
+              pipenv install --deploy --ignore-pipfile
+              sudo systemctl restart telegram_bot.service
+            EOF2
           EOF
