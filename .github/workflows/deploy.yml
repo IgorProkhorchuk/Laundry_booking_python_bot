@@ -27,5 +27,5 @@ jobs:
             cd /opt/telegram_bot
             git pull origin main
             pipenv install --deploy --ignore-pipfile
-            sudo systemctl restart telegram_bot.service
+            systemctl restart telegram_bot.service
           EOF
