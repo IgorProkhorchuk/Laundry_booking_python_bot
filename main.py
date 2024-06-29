@@ -215,9 +215,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("виберіть опцію:", reply_markup=reply_markup)
 
 # Add a regular button for /start command
-    start_button = [[KeyboardButton("/start")]]
+    start_button = [[KeyboardButton("На початок")]]
     start_reply_markup = ReplyKeyboardMarkup(start_button, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text("натисніть кнопку для початку:", reply_markup=start_reply_markup)
+    reply_markup=start_reply_markup
 
 
 
