@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, \
     MessageHandler, filters
 from environs import Env
@@ -214,9 +214,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("виберіть опцію:", reply_markup=reply_markup)
 
-    # Add a start button in the message
-    start_button = [[InlineKeyboardButton("/start", callback_data="start")]]
-    start_reply_markup = InlineKeyboardMarkup(start_button)
+# Add a regular button for /start command
+    start_button = [[KeyboardButton("/start")]]
+    start_reply_markup = ReplyKeyboardMarkup(start_button, one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text("натисніть кнопку для початку:", reply_markup=start_reply_markup)
 
 
