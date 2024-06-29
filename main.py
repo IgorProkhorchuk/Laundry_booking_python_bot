@@ -23,10 +23,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# database path
+global database_path
+database_path = '/opt/laundry_db/bookings.db'
+
+
 # initialize database
 def create_booking_table():
     """Creates the booking table if it doesn't exist."""
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
 
     cursor.execute("""CREATE TABLE IF NOT EXISTS booking (
@@ -76,7 +81,7 @@ timeslots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:
 
 
 def create_schedule():
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     conn.execute("BEGIN TRANSACTION")
     cursor = conn.cursor()
     for day in weekdays:
@@ -91,11 +96,19 @@ def create_schedule():
 
 # create_schedule()
 
+""" Format the schedule for display """
+
+def format_schedule(rows):
+    header = f"{'Day':<12}{'Time':<8}{'Name':<12}\n"
+    line = "-" * 32 + "\n"
+    schedule = header + line + "\n".join([f"{row[1]:<12}{row[2]:<8}{row[3]:<12}" for row in rows])
+    return schedule
+
 """ Get today's schedule """
 
 
 def get_today_schedule():
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     cursor.execute(
         """SELECT * FROM booking WHERE day = ?""", (get_todays_weekday(),)
@@ -103,16 +116,14 @@ def get_today_schedule():
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-
-    schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
-    return schedule
+    return format_schedule(rows)
 
 
 """ Get tomorrow's schedule """
 
 
 def get_romorrow_schedule():
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     cursor.execute(
         """SELECT * FROM booking WHERE day = ?""", (get_tomorrows_weekday(),)
@@ -120,26 +131,23 @@ def get_romorrow_schedule():
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-
-    schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
-    return schedule
+    return format_schedule(rows)
 
 
 """ Get the schedule for the week """
 
 
 def get_week_schedule():
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     cursor.execute("""SELECT * FROM booking""")
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-    schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
-    return schedule
+    return format_schedule(rows)
 
 def get_day_schedule(selected_day):
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     cursor.execute(
         """SELECT * FROM booking WHERE day = ?""", (selected_day,)
@@ -147,12 +155,11 @@ def get_day_schedule(selected_day):
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-    schedule = "\n".join([f"{row[1]} {row[2]}: {row[3]}" for row in rows])
-    return schedule
+    return format_schedule(rows)
 
 
 def get_available_slots_today():
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     cursor.execute(
         """SELECT slot FROM booking WHERE day = ? AND name = 'free'""", (get_todays_weekday(),)
@@ -166,7 +173,7 @@ def get_available_slots_today():
 
 
 def get_available_slots_tomorrow():
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     cursor.execute(
         """SELECT slot FROM booking WHERE day = ? AND name = 'free'""", (get_tomorrows_weekday(),)
@@ -181,7 +188,7 @@ def get_available_slots_tomorrow():
 
 
 def get_available_slots_selected_day(selected_day):
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     cursor.execute(
         """SELECT slot FROM booking WHERE day = ? AND name = 'free'""", (selected_day,)
@@ -207,13 +214,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("виберіть опцію:", reply_markup=reply_markup)
 
+    # Add a start button in the message
+    start_button = [[InlineKeyboardButton("/start", callback_data="start")]]
+    start_reply_markup = InlineKeyboardMarkup(start_button)
+    await update.message.reply_text("натисніть кнопку для початку:", reply_markup=start_reply_markup)
+
+
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
-
-    # CallbackQueries need to be answered, even if no notification to the user is needed
-    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     await query.answer()
 
     if query.data == "1":
@@ -230,7 +239,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
 
     elif query.data == "2":
-        # Implement fetching and displaying tomorrow's schedule
         schedule = get_romorrow_schedule()
         weekday = get_tomorrows_weekday()
         reply_keyboard = [
@@ -244,7 +252,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await query.message.reply_text(text="Виберіть опцію:", reply_markup=reply_markup)
 
     elif query.data == "3":
-        # Implement fetching and displaying the week's schedule
         schedule = get_week_schedule()
         reply_keyboard = [
             [InlineKeyboardButton("Виберіть день: ", callback_data="select_day")],
@@ -292,13 +299,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             await query.message.reply_text(text=f"Немає доступних слотів на {selected_day}.")
 
-
     elif query.data.startswith("slot_"):
         selected_slot = query.data.split("_")[1]
         context.user_data['selected_slot'] = selected_slot
         await query.message.reply_text(text="Введіть ім'я:")
 
-    
     elif query.data == "start":
         reply_keyboard = [
             [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
@@ -330,7 +335,7 @@ async def handle_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 def book_slot(day, slot, name):
-    conn = sqlite3.connect('bookings.db')
+    conn = sqlite3.connect(database_path)
     conn.execute("BEGIN TRANSACTION")
     cursor = conn.cursor()
     cursor.execute(
