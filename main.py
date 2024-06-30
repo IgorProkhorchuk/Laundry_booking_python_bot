@@ -5,6 +5,7 @@ from environs import Env
 import queue, sqlite3, logging
 import asyncio
 from datetime import datetime, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Load the environment variables
 env = Env()
@@ -95,6 +96,24 @@ def create_schedule():
 
 
 # create_schedule()
+
+""" Update the schedule every week """
+
+def get_db_connection():
+    conn = sqlite3.connect(database_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def update_weekly_schedule():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('DELETE FROM booking WHERE name!="free"')
+    conn.commit()
+    conn.close()
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=update_weekly_schedule, trigger='cron', day_of_week='fri', hour=20)
+scheduler.start()
 
 """ Format the schedule for display """
 
@@ -254,7 +273,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif query.data == "3":
         schedule = get_week_schedule()
         reply_keyboard = [
-            [InlineKeyboardButton("Виберіть день: ", callback_data="select_day")],
+            [InlineKeyboardButton("Виберіть день  для бронювання: ", callback_data="select_day")],
             [InlineKeyboardButton("Назад", callback_data="start")],
         ]
         reply_markup = InlineKeyboardMarkup(reply_keyboard)
