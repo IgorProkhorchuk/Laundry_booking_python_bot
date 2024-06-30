@@ -74,7 +74,7 @@ def get_tomorrows_weekday():
     return weekday[tomorrow.weekday()]  # Access by weekday number (0-6)
 
 
-weekdays = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"]
+weekdays = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
 timeslots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
 
 """ create into the database draft schedule for next week, should be changed to create it automatically on a weekly basis """
@@ -99,7 +99,7 @@ def create_schedule():
 """ Format the schedule for display """
 
 def format_schedule(rows):
-    header = f"{'Day':<12}{'Time':<8}{'Name':<12}\n"
+    header = f"{'День':<12}{'Час':<8}{'Ім"я':<12}\n"
     line = "-" * 32 + "\n"
     schedule = header + line + "\n".join([f"{row[1]:<12}{row[2]:<8}{row[3]:<12}" for row in rows])
     return schedule
@@ -284,7 +284,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif query.data == "select_day":
         reply_keyboard = [[InlineKeyboardButton(day, callback_data=f"day_{day}")] for day in weekdays]
         reply_markup = InlineKeyboardMarkup(reply_keyboard)
-        await query.message.reply_text(text="Виберіть день:", reply_markup=reply_markup)
+        await query.message.reply_text(text="Виберіть день для бронювання:", reply_markup=reply_markup)
 
     elif query.data.startswith("day_"):
         selected_day = query.data.split("_")[1]
