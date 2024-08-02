@@ -85,15 +85,15 @@ def update_weekly_schedule():
     conn = sqlite3.connect(database_path)
     conn.execute("BEGIN TRANSACTION")
     cursor = conn.cursor()
+    cursor.execute('DROP TABLE booking')
+    cursor.execute("""CREATE TABLE IF NOT EXISTS booking (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                day TEXT,
+                slot TEXT,
+                name TEXT
+                )""")
     for day in weekdays:
         for slot in timeslots:
-            cursor.execute('DROP TABLE booking')
-            cursor.execute("""CREATE TABLE IF NOT EXISTS booking (
-                      id INTEGER PRIMARY KEY AUTOINCREMENT,
-                      day TEXT,
-                      slot TEXT,
-                      name TEXT
-                      )""")
             cursor.execute(
                 """INSERT INTO booking (day, slot, name) VALUES (?, ?, ?)""",
                 (day, slot, "free")
