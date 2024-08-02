@@ -70,3 +70,9 @@
     - should be displayed the schedule for selected day;
 
 #### Reset database and prepare for next week
+
+
+### Feedback
+
+- To delete weekend as laundry is closed that time;
+- To select a variable timeslot duration;

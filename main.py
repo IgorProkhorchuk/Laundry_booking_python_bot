@@ -63,30 +63,37 @@ def get_week_dates_and_weekdays():
 def get_todays_weekday():
     """Gets the weekday name for today's date."""
     today = datetime.now()
-    weekday = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
-    return weekday[today.weekday()]  # Access by weekday number (0-6)
+    weekday = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"]
+    return weekday[today.weekday()]  # Access by weekday number (0-4)
 
 
 def get_tomorrows_weekday():
     """Gets the weekday name for tomorrow's date."""
     today = datetime.now()
     tomorrow = today + timedelta(days=1)
-    weekday = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
-    return weekday[tomorrow.weekday()]  # Access by weekday number (0-6)
+    weekday = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"]
+    return weekday[tomorrow.weekday()]  # Access by weekday number (0-4)
 
 
-weekdays = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
+weekdays = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця"]
 timeslots = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
 
 """ create into the database draft schedule for next week, should be changed to create it automatically on a weekly basis """
 
 
-def create_schedule():
+def update_weekly_schedule():
     conn = sqlite3.connect(database_path)
     conn.execute("BEGIN TRANSACTION")
     cursor = conn.cursor()
     for day in weekdays:
         for slot in timeslots:
+            cursor.execute('DROP TABLE booking')
+            cursor.execute("""CREATE TABLE IF NOT EXISTS booking (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      day TEXT,
+                      slot TEXT,
+                      name TEXT
+                      )""")
             cursor.execute(
                 """INSERT INTO booking (day, slot, name) VALUES (?, ?, ?)""",
                 (day, slot, "free")
@@ -95,25 +102,10 @@ def create_schedule():
     conn.close()
 
 
-# create_schedule()
-
-""" Update the schedule every week """
-
-def get_db_connection():
-    conn = sqlite3.connect(database_path)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def update_weekly_schedule():
-    conn = get_db_connection()
-    c = conn.cursor()
-    c.execute('DELETE FROM booking WHERE name!="free"')
-    conn.commit()
-    conn.close()
-
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_weekly_schedule, trigger='cron', day_of_week='fri', hour=20)
 scheduler.start()
+
 
 """ Format the schedule for display """
 
