@@ -76,3 +76,29 @@
 
 - To delete weekend as laundry is closed that time;
 - To select a variable timeslot duration;
+
+
+# BOT v.1.2
+
+#### Implementing user registration and cancellation of booked slots:
+
+### User Registration and Authentication:
+
+Add a registration system to collect user information and store it in the database.
+Implement a command for users to register (e.g., /register) and store their Telegram user ID, username, and other necessary details in the database.
+
+
+### Storing User Information with Bookings:
+
+Modify the booking system to store the user's ID along with the booking details. This will help in identifying who made the booking.
+
+
+### Cancelling Booked Slots:
+
+Implement a command or a button for users to view and cancel their bookings.
+Check if the user requesting the cancellation is the same user who made the booking.
+
+
+### Update the Database Schema:
+
+Add columns to store user information in the booking table.

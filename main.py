@@ -39,13 +39,52 @@ def create_booking_table():
                       id INTEGER PRIMARY KEY AUTOINCREMENT,
                       day TEXT,
                       slot TEXT,
-                      name TEXT
+                      name TEXT,
+                      user_id INTEGER
                       )""")
     conn.commit()
     conn.close()
 
+def create_user_table():
+    """Creates the user table if it doesn't exist."""
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS users (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      user_id INTEGER,
+                      username TEXT
+                      )""")
+    conn.commit()
+    conn.close()
 
 create_booking_table()
+create_user_table()
+
+''' Register user in the database '''
+
+def register_user(user_id, username):
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+    cursor.execute("""INSERT INTO users (user_id, username) VALUES (?, ?)""", (user_id, username))
+    conn.commit()
+    conn.close()
+
+def get_registered_user(user_id):
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+    cursor.execute("""SELECT * FROM users WHERE user_id = ?""", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
+async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.message.from_user
+    if get_registered_user(user.id):
+        await update.message.reply_text("You are already registered.")
+    else:
+        register_user(user.id, user.username)
+        await update.message.reply_text("You have been registered successfully.")
 
 """ Define a function to get the dates of the current week """
 
@@ -85,12 +124,13 @@ def update_weekly_schedule():
     conn = sqlite3.connect(database_path)
     conn.execute("BEGIN TRANSACTION")
     cursor = conn.cursor()
-    cursor.execute('DROP TABLE booking')
+    cursor.execute('DROP TABLE IF EXISTS booking')
     cursor.execute("""CREATE TABLE IF NOT EXISTS booking (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 day TEXT,
                 slot TEXT,
-                name TEXT
+                name TEXT,
+                user_id INTEGER
                 )""")
     for day in weekdays:
         for slot in timeslots:
@@ -219,6 +259,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
         [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
         [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
+        [InlineKeyboardButton("Скасувати бронювання", callback_data="cancel_booking")],
     ]
 
     reply_markup = InlineKeyboardMarkup(reply_keyboard)
@@ -315,11 +356,37 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         context.user_data['selected_slot'] = selected_slot
         await query.message.reply_text(text="Введіть ім'я:")
 
+    elif query.data == "cancel_booking":
+        user = update.callback_query.from_user
+        conn = sqlite3.connect(database_path)
+        cursor = conn.cursor()
+        cursor.execute("""SELECT * FROM booking WHERE user_id = ?""", (user.id,))
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if rows:
+            reply_keyboard = [[InlineKeyboardButton(f"{row[1]} {row[2]}", callback_data=f"cancel_{row[0]}")] for row in rows]
+            reply_markup = InlineKeyboardMarkup(reply_keyboard)
+            await query.message.reply_text(text="Виберіть бронювання для скасування:", reply_markup=reply_markup)
+        else:
+            await query.message.reply_text(text="У вас немає активних бронювань.")
+
+    elif query.data.startswith("cancel_"):
+        booking_id = query.data.split("_")[1]
+        user = update.callback_query.from_user
+        conn = sqlite3.connect(database_path)
+        cursor = conn.cursor()
+        cursor.execute("""DELETE FROM booking WHERE id = ? AND user_id = ?""", (booking_id, user.id))
+        conn.commit()
+        conn.close()
+        await query.message.reply_text(text="Ваше бронювання було скасовано.")
+
     elif query.data == "start":
         reply_keyboard = [
             [InlineKeyboardButton("Показати графік на сьогодні", callback_data="1")],
             [InlineKeyboardButton("Показати графік на завтра", callback_data="2")],
             [InlineKeyboardButton("Показати графік на тиждень", callback_data="3")],
+            [InlineKeyboardButton("Скасувати бронювання", callback_data="cancel_booking")],
         ]
         reply_markup = InlineKeyboardMarkup(reply_keyboard)
         await query.message.reply_text("виберіть опцію:", reply_markup=reply_markup)
@@ -345,13 +412,13 @@ async def handle_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         context.user_data['booking_day'] = None
 
 
-def book_slot(day, slot, name):
+def book_slot(day, slot, name, user_id):
     conn = sqlite3.connect(database_path)
     conn.execute("BEGIN TRANSACTION")
     cursor = conn.cursor()
     cursor.execute(
-        """UPDATE booking SET name = ? WHERE day = ? AND slot = ?""",
-        (name, day, slot)
+        """UPDATE booking SET name = ?, user_id = ? WHERE day = ? AND slot = ?""",
+        (name, user_id, day, slot)
     )
     conn.commit()
     conn.close()
